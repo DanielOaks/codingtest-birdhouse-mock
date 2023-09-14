@@ -54,6 +54,8 @@ Options:
 		})
 	})
 	router.GET("/registration", server.GetRegistration)
+	router.GET("/registration/:ubid", server.GetSingleRegistration)
+	router.GET("/house/:ubid/occupancy", server.GetOccupancy)
 	address := net.JoinHostPort("0.0.0.0", strconv.Itoa(config.Server.Port))
 	router.Run(address)
 }

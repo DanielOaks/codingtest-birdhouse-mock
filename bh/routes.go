@@ -54,6 +54,30 @@ type registrationEntry struct {
 	Birdhouse *birdhouseEntry `json:"birdhouse,omitempty"`
 }
 
+type occupancyEntry struct {
+	ID        string `json:"id"`
+	Eggs      int    `json:"eggs"`
+	Birds     int    `json:"birds"`
+	CreatedAt string `json:"created_at"`
+}
+
+func (s *Server) getReg(itemKey string) registrationEntry {
+	item := registrationEntry{
+		Value: itemKey,
+	}
+	if (*s.data)[itemKey] != nil {
+		item.Birdhouse = &birdhouseEntry{
+			UbidValue:           itemKey,
+			Name:                (*s.data)[itemKey].Name,
+			Latitude:            (*s.data)[itemKey].Location.Latitude,
+			Longitude:           (*s.data)[itemKey].Location.Longitude,
+			LastOccupancyUpdate: (*s.data)[itemKey].OccupancyHistory[0].CreatedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
+		}
+	}
+
+	return item
+}
+
 func (s *Server) GetRegistration(c *gin.Context) {
 	page, limit := getPageAndLimit(c)
 	totalItems := len(*s.data)
@@ -67,25 +91,12 @@ func (s *Server) GetRegistration(c *gin.Context) {
 
 	baseIndex := (page - 1) * limit
 	for i := 0; i < limit; i++ {
-		if baseIndex+i >= len(s.order) {
+		if baseIndex+i >= totalItems {
 			break
 		}
 		itemKey := s.order[baseIndex+i]
 
-		item := registrationEntry{
-			Value: itemKey,
-		}
-		if (*s.data)[itemKey] != nil {
-			item.Birdhouse = &birdhouseEntry{
-				UbidValue:           itemKey,
-				Name:                (*s.data)[itemKey].Name,
-				Latitude:            (*s.data)[itemKey].Location.Latitude,
-				Longitude:           (*s.data)[itemKey].Location.Longitude,
-				LastOccupancyUpdate: (*s.data)[itemKey].OccupancyHistory[0].CreatedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
-			}
-		}
-
-		items = append(items, item)
+		items = append(items, s.getReg(itemKey))
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -98,8 +109,47 @@ func (s *Server) GetRegistration(c *gin.Context) {
 			"currentPage":  page,
 		},
 	})
-	// 	gin.H{
-	// 	"page":  page,
-	// 	"limit": limit,
-	// })
+}
+
+func (s *Server) GetSingleRegistration(c *gin.Context) {
+	ubid := c.Param("ubid")
+
+	c.JSON(http.StatusOK, s.getReg(ubid))
+}
+
+func (s *Server) GetOccupancy(c *gin.Context) {
+	ubid := c.Param("ubid")
+	page, limit := getPageAndLimit(c)
+	totalEntries := len((*s.data)[ubid].OccupancyHistory)
+
+	// return all data if no limit is set
+	if limit == -1 {
+		limit = totalEntries
+	}
+
+	var entries []occupancyEntry
+
+	baseIndex := (page - 1) * limit
+	for i := 0; i < limit; i++ {
+		if baseIndex+i >= totalEntries {
+			break
+		}
+		entries = append(entries, occupancyEntry{
+			ID:        (*s.data)[ubid].OccupancyHistory[baseIndex+i].ID,
+			Eggs:      (*s.data)[ubid].OccupancyHistory[baseIndex+i].Eggs,
+			Birds:     (*s.data)[ubid].OccupancyHistory[baseIndex+i].Birds,
+			CreatedAt: (*s.data)[ubid].OccupancyHistory[baseIndex+i].CreatedAt.Format("2006-01-02T15:04:05.000Z"),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"items": entries,
+		"meta": map[string]int{
+			"totalItems":   totalEntries,
+			"itemCount":    len(entries),
+			"itemsPerPage": limit,
+			"totalPages":   int(math.Ceil(float64(totalEntries) / float64(limit))),
+			"currentPage":  page,
+		},
+	})
 }
