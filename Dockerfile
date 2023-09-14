@@ -22,7 +22,7 @@ EXPOSE 5031/tcp
 COPY --from=build-env /go/src/github.com/DanielOaks/codingtest-birdhouse-mock/birdhouse-mock \
                       /bh-bin/
 
-ENTRYPOINT ["/bh-bin/birdhouse-mock"]
+ENTRYPOINT ["/bh-bin/birdhouse-mock", "run"]
 
 # # uncomment to debug
 # RUN apk add --no-cache bash
