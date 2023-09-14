@@ -40,11 +40,12 @@ Options:
 	fmt.Println(" ", config)
 
 	fmt.Println("Generating mock registrations and data!")
-	data := bh.GenerateData(config.Birdhouses)
+	dataOrder, data := bh.GenerateData(config.Birdhouses)
 	fmt.Println("Data:")
 	fmt.Println(" ", data)
 
 	fmt.Println("Starting server!")
+	server := bh.NewServer(data, dataOrder)
 	// gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.GET("/ping", func(c *gin.Context) {
@@ -52,6 +53,7 @@ Options:
 			"message": "pong",
 		})
 	})
+	router.GET("/registration", server.GetRegistration)
 	address := net.JoinHostPort("0.0.0.0", strconv.Itoa(config.Server.Port))
 	router.Run(address)
 }

@@ -92,19 +92,25 @@ type Birdhouse struct {
 
 type Data map[string]*Birdhouse
 
-func GenerateData(conf BirdhousesConfig) *Data {
+func GenerateData(conf BirdhousesConfig) ([]string, *Data) {
 	names := getNameList()
 	locations := getLocationList()
 
+	// note: we use a slice here instead of just using an ordered list to
+	//  simplify iterating when pagination is involved. it's a bit messy, but
+	//  it's quick and should work well
+	var dataOrder []string
 	var data Data
 
 	for {
 		fmt.Println("Generating data")
+		dataOrder = nil
 		data = make(Data)
 		var emptyGenerated int
 
 		for i := 0; i < conf.Registrations; i++ {
 			ubid := uuid.NewV4().String()
+			dataOrder = append(dataOrder, ubid)
 
 			if rand.Float64() < conf.EmptyRegistrationsPercentage {
 				emptyGenerated++
@@ -151,5 +157,5 @@ func GenerateData(conf BirdhousesConfig) *Data {
 		break
 	}
 
-	return &data
+	return dataOrder, &data
 }
