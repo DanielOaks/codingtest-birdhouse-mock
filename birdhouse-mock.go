@@ -37,20 +37,16 @@ Options:
 
 	config := bh.GetConfig()
 
-	fmt.Println("Configuration:")
-	fmt.Println(" ", arguments)
-	fmt.Println(" ", config)
-
 	fmt.Println("Generating mock registrations and data!")
 	dataOrder, data := bh.GenerateData(config.Birdhouses)
-	fmt.Println("Data:")
-	fmt.Println(" ", data)
+	fmt.Println("  Generated", len(dataOrder), "registrations")
 
 	fmt.Println("Starting server!")
 	server := bh.NewServer(data, dataOrder)
 
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+	router.SetTrustedProxies(nil)
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "PUT", "PATCH"},
