@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
+	perlin "github.com/aquilax/go-perlin"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -126,6 +128,15 @@ func GenerateData(conf BirdhousesConfig) ([]string, *Data) {
 			stepTime := time.Second * time.Duration(oneWeek.Seconds()/float64(conf.OccupancyUpdatesPerWeek))
 			baseTime := time.Now()
 
+			// generating occupancy values is interesting.
+			currentEggs := float64(rand.Intn(50))
+			currentEggModifier := float64(rand.Intn(8))
+			eggP := perlin.NewPerlin(2, 2, 4, int64(rand.Float64()))
+
+			currentBirds := float64(rand.Intn(30))
+			currentBirdModifier := float64(rand.Intn(5))
+			birdP := perlin.NewPerlin(2, 2, 4, int64(rand.Float64()))
+
 			for j := 0; j < conf.OccupancyUpdatesPerWeek*conf.StandardOccupancyInWeeks; j++ {
 				// random time to adjust the baseTime by for this update
 				sleepTime := time.Second * time.Duration(rand.Intn(int(stepTime.Seconds()/2)))
@@ -135,9 +146,14 @@ func GenerateData(conf BirdhousesConfig) ([]string, *Data) {
 				occupancy = append(occupancy, OccupancyState{
 					ID:        uuid.NewV4().String(),
 					CreatedAt: baseTime.Add(sleepTime),
-					Eggs:      0,
-					Birds:     0,
+					Eggs:      int(math.Abs(currentEggs)),
+					Birds:     int(math.Abs(currentBirds)),
 				})
+				currentEggs += eggP.Noise1D(float64(j)*.1) * currentEggModifier
+				currentEggModifier += rand.Float64() * 2
+
+				currentBirds += birdP.Noise1D(float64(j)*.1) * currentBirdModifier
+				currentBirdModifier += rand.Float64() * 3
 
 				baseTime = baseTime.Add(-stepTime)
 			}

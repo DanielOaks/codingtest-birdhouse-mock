@@ -120,7 +120,10 @@ func (s *Server) GetSingleRegistration(c *gin.Context) {
 func (s *Server) GetOccupancy(c *gin.Context) {
 	ubid := c.Param("ubid")
 	page, limit := getPageAndLimit(c)
-	totalEntries := len((*s.data)[ubid].OccupancyHistory)
+	totalEntries := 0
+	if (*s.data)[ubid] != nil {
+		totalEntries = len((*s.data)[ubid].OccupancyHistory)
+	}
 
 	// return all data if no limit is set
 	if limit == -1 {
