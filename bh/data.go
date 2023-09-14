@@ -131,11 +131,13 @@ func GenerateData(conf BirdhousesConfig) ([]string, *Data) {
 			// generating occupancy values is interesting.
 			currentEggs := float64(rand.Intn(50))
 			currentEggModifier := float64(rand.Intn(8))
-			eggP := perlin.NewPerlin(2, 2, 4, int64(rand.Float64()))
+			eggSeed := int64(rand.Float64() * 1000)
+			eggP := perlin.NewPerlin(2, 2, 4, eggSeed)
 
 			currentBirds := float64(rand.Intn(30))
 			currentBirdModifier := float64(rand.Intn(5))
-			birdP := perlin.NewPerlin(2, 2, 4, int64(rand.Float64()))
+			birdSeed := int64(rand.Float64() * 1000)
+			birdP := perlin.NewPerlin(2, 2, 9, birdSeed)
 
 			for j := 0; j < conf.OccupancyUpdatesPerWeek*conf.StandardOccupancyInWeeks; j++ {
 				// random time to adjust the baseTime by for this update
@@ -152,7 +154,7 @@ func GenerateData(conf BirdhousesConfig) ([]string, *Data) {
 				currentEggs += eggP.Noise1D(float64(j)*.1) * currentEggModifier
 				currentEggModifier += rand.Float64() * 2
 
-				currentBirds += birdP.Noise1D(float64(j)*.1) * currentBirdModifier
+				currentBirds += birdP.Noise1D(float64(j)*.15) * currentBirdModifier
 				currentBirdModifier += rand.Float64() * 3
 
 				baseTime = baseTime.Add(-stepTime)
