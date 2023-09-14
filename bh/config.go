@@ -73,7 +73,7 @@ func GetConfig() (config Config) {
 	//
 	port, err := strconv.Atoi(os.Getenv("BH_SERVE_PORT"))
 	if err != nil {
-		port = 7000
+		port = 5031
 	}
 	config.Server.Port = port
 

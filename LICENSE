@@ -1,3 +1,5 @@
 This code is released under CC0 / public domain. See below for any datasets we use, which may have different licenses.
 
 Uses the Moby Word Lists which are Public Domain, see here: https://www.gutenberg.org/ebooks/3201
+
+Uses the World City Locations list, see here: https://github.com/bahar/WorldCityLocations

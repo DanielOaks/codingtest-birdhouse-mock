@@ -5,9 +5,13 @@ package main
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"strconv"
 
 	"github.com/DanielOaks/codingtest-birdhouse-mock/bh"
 	"github.com/docopt/docopt-go"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -41,4 +45,13 @@ Options:
 	fmt.Println(" ", data)
 
 	fmt.Println("Starting server!")
+	// gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+	router.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+	address := net.JoinHostPort("0.0.0.0", strconv.Itoa(config.Server.Port))
+	router.Run(address)
 }

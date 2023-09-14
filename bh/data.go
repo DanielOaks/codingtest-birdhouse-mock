@@ -5,8 +5,16 @@ package bh
 
 import (
 	_ "embed"
+	"encoding/csv"
 	"fmt"
+	"io"
+	"log"
+	"math/rand"
+	"strconv"
 	"strings"
+	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 //go:embed moby-word-lists/names-f.txt
@@ -22,12 +30,126 @@ func getNameList() (names []string) {
 	return names
 }
 
-type Data struct {
+//go:embed locations/World_Cities_Location_table.csv
+var locationListCSV string
+
+type Location struct {
+	Latitude  float64
+	Longitude float64
 }
 
-func GenerateData(config BirdhousesConfig) (data Data) {
-	names := getNameList()
-	fmt.Println(names)
+func getLocationList() (locations []Location) {
+	r := csv.NewReader(strings.NewReader(locationListCSV))
+	r.Comma = ';'
 
-	return data
+	for {
+		record, err := r.Read()
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// the fields are:
+		//   id, country, city, latitude, longitude, altitude
+		lat, err := strconv.ParseFloat(record[3], 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		long, err := strconv.ParseFloat(record[4], 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		locations = append(locations, Location{
+			Latitude:  lat,
+			Longitude: long,
+		})
+
+		// fmt.Println(record)
+		// fmt.Println(" ", locations[len(locations)-1])
+	}
+
+	return locations
+}
+
+type OccupancyState struct {
+	ID        string
+	CreatedAt time.Time
+	Eggs      int
+	Birds     int
+}
+
+type Birdhouse struct {
+	Name             string
+	Location         Location
+	OccupancyHistory []OccupancyState
+}
+
+type Data map[string]*Birdhouse
+
+func GenerateData(conf BirdhousesConfig) *Data {
+	names := getNameList()
+	locations := getLocationList()
+
+	var data Data
+
+	for {
+		fmt.Println("Generating data")
+		data = make(Data)
+		var emptyGenerated int
+
+		for i := 0; i < conf.Registrations; i++ {
+			ubid := uuid.NewV4().String()
+
+			if rand.Float64() < conf.EmptyRegistrationsPercentage {
+				emptyGenerated++
+				data[ubid] = nil
+				continue
+			}
+
+			randomName := fmt.Sprintf("%s's Birdhouse", names[rand.Intn(len(names))])
+			randomLocation := locations[rand.Intn(len(locations))]
+			var occupancy []OccupancyState
+
+			oneWeek := time.Hour * 24 * 7
+			stepTime := time.Second * time.Duration(oneWeek.Seconds()/float64(conf.OccupancyUpdatesPerWeek))
+			baseTime := time.Now()
+
+			for j := 0; j < conf.OccupancyUpdatesPerWeek*conf.StandardOccupancyInWeeks; j++ {
+				// random time to adjust the baseTime by for this update
+				sleepTime := time.Second * time.Duration(rand.Intn(int(stepTime.Seconds()/2)))
+				if rand.Float64() < .5 {
+					sleepTime *= -1
+				}
+				occupancy = append(occupancy, OccupancyState{
+					ID:        uuid.NewV4().String(),
+					CreatedAt: baseTime.Add(sleepTime),
+					Eggs:      0,
+					Birds:     0,
+				})
+
+				baseTime = baseTime.Add(-stepTime)
+			}
+
+			data[ubid] = &Birdhouse{
+				Name:             randomName,
+				Location:         randomLocation,
+				OccupancyHistory: occupancy,
+			}
+		}
+
+		if conf.EmptyRegistrationsPercentage > 0 && emptyGenerated == 0 {
+			fmt.Println("  Didn't generate any empty birdhouses, regenerating")
+			continue
+		}
+
+		break
+	}
+
+	return &data
 }
