@@ -22,7 +22,7 @@ type BirdhousesConfig struct {
 	OccupancyUpdatesPerWeek int
 
 	// how many birdhouses have broken, garbage occupancy data.
-	// this includes duplicated entries, entries with the same ID, and more!
+	// this includes duplicated entries, entries with the same ID/ts, and more!
 	BrokenBirdhousePercentage float64
 }
 
