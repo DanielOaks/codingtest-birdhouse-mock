@@ -1,0 +1,24 @@
+version: "3.1"
+
+services:
+  mock:
+    image: ghcr.io/danieloaks/codingtest-birdhouse-mock:release
+    container_name: birdhouse_mock
+    environment:
+      - BH_SERVE_PORT=5134
+    restart: always
+    ports:
+      - "5134:5134"
+
+  admin:
+    image: ghcr.io/danieloaks/codingtest-birdhouse-admin:release
+    container_name: birdhouse_admin
+    environment:
+      # note: if running this docker compose file not on a local machine,
+      #  change 'localhost' to the public address of the server
+      - NUXT_PUBLIC_API_BASE=http://localhost:5134/
+      - NUXT_PUBLIC_REGISTRATION_ITEMS_PER_PAGE=10
+      - NUXT_PUBLIC_OCCUPANCY_STATES_PER_PAGE=14
+    restart: always
+    ports:
+      - "3000:3000"
