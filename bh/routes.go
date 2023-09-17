@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -120,6 +121,11 @@ func (s *Server) GetSingleRegistration(c *gin.Context) {
 func (s *Server) GetOccupancy(c *gin.Context) {
 	ubid := c.Param("ubid")
 	page, limit := getPageAndLimit(c)
+	order := strings.ToLower(c.Query("order"))
+	if order == "" {
+		order = "desc"
+	}
+
 	totalEntries := 0
 	if (*s.data)[ubid] != nil {
 		totalEntries = len((*s.data)[ubid].OccupancyHistory)
@@ -133,15 +139,24 @@ func (s *Server) GetOccupancy(c *gin.Context) {
 	var entries []occupancyEntry
 
 	baseIndex := (page - 1) * limit
+	if order == "asc" {
+		baseIndex = (totalEntries - 1) - ((page - 1) * limit)
+	}
+
 	for i := 0; i < limit; i++ {
-		if baseIndex+i >= totalEntries {
+		thisIndex := baseIndex + i
+		if order == "asc" {
+			thisIndex = baseIndex - i
+		}
+
+		if thisIndex < 0 || thisIndex >= totalEntries {
 			break
 		}
 		entries = append(entries, occupancyEntry{
-			ID:        (*s.data)[ubid].OccupancyHistory[baseIndex+i].ID,
-			Eggs:      (*s.data)[ubid].OccupancyHistory[baseIndex+i].Eggs,
-			Birds:     (*s.data)[ubid].OccupancyHistory[baseIndex+i].Birds,
-			CreatedAt: (*s.data)[ubid].OccupancyHistory[baseIndex+i].CreatedAt.Format("2006-01-02T15:04:05.000Z"),
+			ID:        (*s.data)[ubid].OccupancyHistory[thisIndex].ID,
+			Eggs:      (*s.data)[ubid].OccupancyHistory[thisIndex].Eggs,
+			Birds:     (*s.data)[ubid].OccupancyHistory[thisIndex].Birds,
+			CreatedAt: (*s.data)[ubid].OccupancyHistory[thisIndex].CreatedAt.Format("2006-01-02T15:04:05.000Z"),
 		})
 	}
 
