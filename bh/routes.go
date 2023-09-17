@@ -66,13 +66,14 @@ func (s *Server) getReg(itemKey string) registrationEntry {
 	item := registrationEntry{
 		Value: itemKey,
 	}
-	if (*s.data)[itemKey] != nil {
+	theData := (*s.data)[itemKey]
+	if theData != nil {
 		item.Birdhouse = &birdhouseEntry{
 			UbidValue:           itemKey,
-			Name:                (*s.data)[itemKey].Name,
-			Latitude:            (*s.data)[itemKey].Location.Latitude,
-			Longitude:           (*s.data)[itemKey].Location.Longitude,
-			LastOccupancyUpdate: (*s.data)[itemKey].OccupancyHistory[0].CreatedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
+			Name:                theData.Name,
+			Latitude:            theData.Location.Latitude,
+			Longitude:           theData.Location.Longitude,
+			LastOccupancyUpdate: theData.OccupancyHistory[0].CreatedAt.UTC().Format("2006-01-02T15:04:05.000Z"),
 		}
 	}
 
@@ -115,21 +116,45 @@ func (s *Server) GetRegistration(c *gin.Context) {
 func (s *Server) GetSingleRegistration(c *gin.Context) {
 	ubid := c.Param("ubid")
 
+	if (*s.data)[ubid] == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "The given registration was not found",
+			"params": map[string]any{
+				"value": ubid,
+			},
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, s.getReg(ubid))
 }
 
 func (s *Server) GetOccupancy(c *gin.Context) {
 	ubid := c.Param("ubid")
+	if ubid != c.GetHeader("X-UBID") {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Authentication is required for this endpoint",
+		})
+		return
+	}
+	theData := (*s.data)[ubid]
+	if theData == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "The given birdhouse was not found",
+			"params": map[string]any{
+				"ubid": ubid,
+			},
+		})
+		return
+	}
+
 	page, limit := getPageAndLimit(c)
 	order := strings.ToLower(c.Query("order"))
 	if order == "" {
 		order = "desc"
 	}
 
-	totalEntries := 0
-	if (*s.data)[ubid] != nil {
-		totalEntries = len((*s.data)[ubid].OccupancyHistory)
-	}
+	totalEntries := len(theData.OccupancyHistory)
 
 	// return all data if no limit is set
 	if limit == -1 {
@@ -152,11 +177,12 @@ func (s *Server) GetOccupancy(c *gin.Context) {
 		if thisIndex < 0 || thisIndex >= totalEntries {
 			break
 		}
+		theOccupancy := theData.OccupancyHistory[thisIndex]
 		entries = append(entries, occupancyEntry{
-			ID:        (*s.data)[ubid].OccupancyHistory[thisIndex].ID,
-			Eggs:      (*s.data)[ubid].OccupancyHistory[thisIndex].Eggs,
-			Birds:     (*s.data)[ubid].OccupancyHistory[thisIndex].Birds,
-			CreatedAt: (*s.data)[ubid].OccupancyHistory[thisIndex].CreatedAt.Format("2006-01-02T15:04:05.000Z"),
+			ID:        theOccupancy.ID,
+			Eggs:      theOccupancy.Eggs,
+			Birds:     theOccupancy.Birds,
+			CreatedAt: theOccupancy.CreatedAt.Format("2006-01-02T15:04:05.000Z"),
 		})
 	}
 
