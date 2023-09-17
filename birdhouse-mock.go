@@ -62,7 +62,7 @@ Options:
 			"message": "pong",
 		})
 	})
-	router.GET("/registration", server.GetRegistration)
+	router.GET("/registration", server.GetRegistrations)
 	router.GET("/registration/:ubid", server.GetSingleRegistration)
 	router.GET("/house/:ubid/occupancy", server.GetOccupancy)
 

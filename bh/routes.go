@@ -80,7 +80,7 @@ func (s *Server) getReg(itemKey string) registrationEntry {
 	return item
 }
 
-func (s *Server) GetRegistration(c *gin.Context) {
+func (s *Server) GetRegistrations(c *gin.Context) {
 	page, limit := getPageAndLimit(c)
 	totalItems := len(*s.data)
 
